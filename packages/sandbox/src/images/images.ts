@@ -1,7 +1,6 @@
 import type {
   ApiClient as ManagementApiClient,
   SandboxImage as ApiImage,
-  SandboxImageSummary as ApiImageSummary,
   SandboxImageTag as ApiImageTag,
   SandboxLibraryImage as ApiLibraryImage,
 } from "@basetenlabs/client/managementapi";
@@ -168,6 +167,23 @@ export interface ImageWaitOptions {
 export interface ImagePushRequestBase extends ImageWaitOptions {
   /** Repository name. Pushing to an existing name adds a new version to it. */
   name: string;
+
+  /**
+   * Memory in megabytes, from 1 to 32768, of the temporary environment that
+   * builds the image from its build context, or imports it from a registry.
+   * Unset uses the default size. Does not change the memory of sandboxes
+   * created from the image.
+   */
+  memory?: number;
+
+  /**
+   * Scratch disk in megabytes, from 0 to 131072, attached to the temporary
+   * build environment for intermediate layers. Set it for a large image that
+   * runs out of space while building or importing. Unset or 0 builds in
+   * memory, which is the default. Teams with HIPAA compliance enabled accept
+   * only unset or 0.
+   */
+  volume?: number;
 
   /**
    * Whether to return only once the image is ready to use, throwing
@@ -500,6 +516,8 @@ export class ImageClient {
             name: request.name,
             image: request.registryImage,
             docker_config: request.dockerConfig,
+            memory: request.memory,
+            volume: request.volume,
           },
         }),
       );
@@ -507,7 +525,13 @@ export class ImageClient {
         if (response.upload_url === undefined) {
           throw new Error(`pushing image ${request.name} returned no upload URL`);
         }
-        await this.#upload(request.name, response.upload_url, archive.zip, signal);
+        await this.#upload(
+          request.name,
+          response.upload_url,
+          response.upload_headers,
+          archive.zip,
+          signal,
+        );
       }
     } finally {
       await archive?.remove?.();
@@ -661,13 +685,26 @@ export class ImageClient {
     return result.items.map(imageLibraryInfoFromApi);
   }
 
-  async #upload(name: string, url: string, zip: Blob, signal: AbortSignal | undefined) {
+  async #upload(
+    name: string,
+    url: string,
+    uploadHeaders: Record<string, string> | undefined,
+    zip: Blob,
+    signal: AbortSignal | undefined,
+  ) {
     // The URL is signed for storage, so none of the API's headers or
-    // credentials go with it. A Blob, in memory or backed by a file, has a
-    // known size, so fetch sends the Content-Length storage requires.
+    // credentials go with it. It is also signed for any headers the push
+    // returned, so storage rejects the upload unless they go as given. A
+    // Blob, in memory or backed by a file, has a known size, so fetch sends
+    // the Content-Length storage requires.
+    const headers = new Headers({ "Content-Type": "application/zip" });
+    // set replaces case-insensitively, so a signed header is never sent twice.
+    for (const [key, value] of Object.entries(uploadHeaders ?? {})) {
+      headers.set(key, value);
+    }
     const response = await this.#context.fetch(url, {
       method: "PUT",
-      headers: { "Content-Type": "application/zip" },
+      headers,
       body: zip,
       signal,
     });
@@ -1030,7 +1067,7 @@ function compareNames(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-function imageInfoFromApi(image: ApiImage | ApiImageSummary): ImageInfo {
+function imageInfoFromApi(image: ApiImage): ImageInfo {
   return {
     name: image.name,
     status: image.status,
