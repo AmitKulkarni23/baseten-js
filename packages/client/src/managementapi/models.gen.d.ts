@@ -10612,6 +10612,21 @@ export type components = {
       /** @description Pagination metadata for the page. */
       pagination: components["schemas"]["PaginationResponse"];
     };
+    /** RouteClassifierListingRefV1 */
+    RouteClassifierListingRef: {
+      /**
+       * Id
+       * @description Stable classifier identifier.
+       * @example general-v1
+       */
+      id: string;
+      /**
+       * Name
+       * @description Display name of the classifier.
+       * @example General
+       */
+      name: string;
+    };
     /** RouteRefV1 */
     RouteRef: {
       /**
@@ -10638,25 +10653,15 @@ export type components = {
        */
       model: string;
     };
-    /** RouteTargetClassifierModelBasedV1 */
-    RouteTargetClassifierModelBased: {
+    /** RouteTargetClassifierV1 */
+    RouteTargetClassifier: {
       /**
-       * @description Target kind for a classifier-model-based route. (enum property replaced by openapi-typescript)
+       * @description Target kind for a classifier-based route. (enum property replaced by openapi-typescript)
        * @enum {string}
        */
-      type: "CLASSIFIER_MODEL_BASED";
-      /**
-       * Classifier Model Id
-       * @description ID of the Baseten model that picks a route for each request.
-       * @example abcd123
-       */
-      classifier_model_id: string;
-      /**
-       * Classifier Environment Name
-       * @description Environment of the classifier model. Null for production.
-       * @example production
-       */
-      classifier_environment_name: string | null;
+      type: "CLASSIFIER";
+      /** @description Classifier that picks a route for each request. Null for routers created before classifiers could be selected. */
+      classifier: components["schemas"]["RouteClassifierListingRef"] | null;
       /** @description Route used when the classifier picks none. */
       default_route: components["schemas"]["RouteRef"];
       /**
@@ -10722,7 +10727,7 @@ export type components = {
       target:
         | components["schemas"]["RouteTargetBasetenModelAPI"]
         | components["schemas"]["RouteTargetConnection"]
-        | components["schemas"]["RouteTargetClassifierModelBased"];
+        | components["schemas"]["RouteTargetClassifier"];
       /** @description Resolved model metadata; for a router, the envelope of its allowed routes' metadata. Null when nothing is linked. */
       metadata: components["schemas"]["ExploreMetadata"] | null;
       /**
@@ -10760,25 +10765,19 @@ export type components = {
        */
       model: string;
     };
-    /** UpsertRouteTargetClassifierModelBasedV1 */
-    UpsertRouteTargetClassifierModelBased: {
+    /** UpsertRouteTargetClassifierV1 */
+    UpsertRouteTargetClassifier: {
       /**
-       * @description Target kind for a classifier-model-based route. Not intended for general use: classifiers are deployed by Baseten's post-training team. (enum property replaced by openapi-typescript)
+       * @description Target kind for a classifier-based route. (enum property replaced by openapi-typescript)
        * @enum {string}
        */
-      type: "CLASSIFIER_MODEL_BASED";
+      type: "CLASSIFIER";
       /**
-       * Classifier Model Id
-       * @description ID of the Baseten model that picks a route for each request. Only classifiers deployed by Baseten's post-training team are supported.
-       * @example abcd123
+       * Classifier Id
+       * @description ID of the classifier that picks a route for each request.
+       * @example general-v1
        */
-      classifier_model_id: string;
-      /**
-       * Classifier Environment Name
-       * @description Environment of the classifier model. Omit for production, which is returned as null.
-       * @example production
-       */
-      classifier_environment_name?: string | null;
+      classifier_id: string;
       /**
        * Allowed Route Ids
        * @description IDs of the routes the classifier may pick. All must belong to the route's team and must not be routers themselves.
@@ -10839,7 +10838,7 @@ export type components = {
       target:
         | components["schemas"]["UpsertRouteTargetBasetenModelAPI"]
         | components["schemas"]["UpsertRouteTargetConnection"]
-        | components["schemas"]["UpsertRouteTargetClassifierModelBased"];
+        | components["schemas"]["UpsertRouteTargetClassifier"];
       /**
        * Description
        * @description Short description of the route. Omit for no description; null is not accepted.
@@ -11038,11 +11037,11 @@ export type components = {
        * @example dev@example.com
        */
       email: string | null;
-      /** @description Spend limit for Baseten Code in the team. Applies to requests with Routes keys the user created in the team; personal API keys are not limited. */
+      /** @description Spend limit for Baseten Grid in the team. Applies to requests with Routes keys the user created in the team; personal API keys are not limited. */
       spend_limit: components["schemas"]["RouteSpendLimitSetting"];
       /**
        * Month Spend Usd
-       * @description The user's metered Code spend in USD in the team this UTC calendar month, returned as an exact decimal string.
+       * @description The user's metered Grid spend in USD in the team this UTC calendar month, returned as an exact decimal string.
        * @example 12.5
        */
       month_spend_usd: string;
@@ -11058,7 +11057,7 @@ export type components = {
     RouteUserTeamSettingsList: {
       /**
        * Teams
-       * @description The user's settings in each team they have a role in and in any team they have Code spend in this month, alphabetical by team name.
+       * @description The user's settings in each team they have a role in and in any team they have Grid spend in this month, alphabetical by team name.
        */
       teams: components["schemas"]["RouteTeamUserSettings"][];
     };
@@ -11096,13 +11095,13 @@ export type components = {
     RouteTeamSpendLimitSetting: {
       /**
        * Per Member Monthly Limit Usd
-       * @description Spend limit in USD for each UTC calendar month that applies to each member's Code spend in this team, unless the member has a limit of their own. Returned as an exact decimal string. Null when the team has no per-member limit.
+       * @description Spend limit in USD for each UTC calendar month that applies to each member's Grid spend in this team, unless the member has a limit of their own. Returned as an exact decimal string. Null when the team has no per-member limit.
        * @example 200
        */
       per_member_monthly_limit_usd: string | null;
       /**
        * Team Wide Monthly Limit Usd
-       * @description Spend limit in USD for each UTC calendar month on the Code spend of all members in this team together. Once it is reached, every member's requests in the team are rejected. Returned as an exact decimal string. Null when the team has no team-wide limit.
+       * @description Spend limit in USD for each UTC calendar month on the Grid spend of all members in this team together. Once it is reached, every member's requests in the team are rejected. Returned as an exact decimal string. Null when the team has no team-wide limit.
        * @example 5000
        */
       team_wide_monthly_limit_usd: string | null;
@@ -11117,7 +11116,7 @@ export type components = {
       team_id: string;
       /** @description Route for each model role of each coding harness. A role with no route set by a team admin uses the default chosen from the team's Model API routes: the recommended model for `primary` and the lowest-priced model for `background`. These defaults never use external-provider routes. */
       harness_defaults: components["schemas"]["RouteHarnessDefaults"];
-      /** @description Spend limits for Baseten Code for members' spend in this team. */
+      /** @description Spend limits for Baseten Grid for members' spend in this team. */
       spend_limit: components["schemas"]["RouteTeamSpendLimitSetting"];
     };
     /** UpdateBackgroundHarnessModelsV1 */
@@ -11159,13 +11158,13 @@ export type components = {
     UpdateRouteTeamSpendLimitSetting: {
       /**
        * Per Member Monthly Limit Usd
-       * @description Spend limit in USD for each UTC calendar month that applies to each member's Code spend in this team, unless the member has a limit of their own. Send null to remove it; omit to leave it unchanged.
+       * @description Spend limit in USD for each UTC calendar month that applies to each member's Grid spend in this team, unless the member has a limit of their own. Send null to remove it; omit to leave it unchanged.
        * @example 200
        */
       per_member_monthly_limit_usd?: string | null;
       /**
        * Team Wide Monthly Limit Usd
-       * @description Spend limit in USD for each UTC calendar month on the Code spend of all members in this team together. Send null to remove it; omit to leave it unchanged.
+       * @description Spend limit in USD for each UTC calendar month on the Grid spend of all members in this team together. Send null to remove it; omit to leave it unchanged.
        * @example 5000
        */
       team_wide_monthly_limit_usd?: string | null;
@@ -11181,7 +11180,7 @@ export type components = {
     RouteTeamUserSettingsList: {
       /**
        * Users
-       * @description Settings of each user with a role in the team and of anyone with Code spend in the team this month.
+       * @description Settings of each user with a role in the team and of anyone with Grid spend in the team this month.
        */
       users: components["schemas"]["RouteTeamUserSettings"][];
     };
@@ -11414,13 +11413,13 @@ export type components = {
       display_name?: string | null;
       /**
        * Target
-       * @description Complete new target configuration. Omit to keep the current configuration; null is not accepted. Only the CLASSIFIER_MODEL_BASED configuration of a router route is mutable.
+       * @description Complete new target configuration. Omit to keep the current configuration; null is not accepted. Only the CLASSIFIER configuration of a router route is mutable.
        */
       target?:
         | (
             | components["schemas"]["UpsertRouteTargetBasetenModelAPI"]
             | components["schemas"]["UpsertRouteTargetConnection"]
-            | components["schemas"]["UpsertRouteTargetClassifierModelBased"]
+            | components["schemas"]["UpsertRouteTargetClassifier"]
           )
         | null;
     };
@@ -13675,6 +13674,151 @@ export type components = {
        */
       message: string;
     };
+    /**
+     * @description Preview status, always uppercase.
+     * @example DEPLOYED
+     * @enum {string}
+     */
+    SandboxPreviewStatus: "DEPLOYING" | "DEPLOYED" | "FAILED" | "DELETING" | "TERMINATED";
+    /**
+     * @description Lifetime counted from the request, using seconds, minutes, hours or composite durations such as 1h30m. Whole days are also supported, for example 7d; days cannot be combined with other units. The preview is deleted when it elapses.
+     * @example 24h
+     */
+    SandboxPreviewTtl: string;
+    /**
+     * @description HTTP headers as name-value pairs.
+     * @example {
+     *       "Access-Control-Allow-Origin": "*"
+     *     }
+     */
+    SandboxPreviewHeaders: {
+      [key: string]: string;
+    };
+    /** @description Mutable preview configuration. ttl and expires_at are mutually exclusive; supplying both returns 400. */
+    SandboxPreviewConfiguration: {
+      /**
+       * @description Whether the URL is reachable without a preview token. Defaults to false.
+       * @example true
+       */
+      public?: boolean;
+      /** @description Headers added to every response served by the preview, for example CORS headers. */
+      response_headers?: components["schemas"]["SandboxPreviewHeaders"];
+      /**
+       * @description Headers added to every request forwarded to the sandbox, for example an Authorization header expected by the application. Responses return each name with the value "****", except a GET with show_secrets=true by a workspace administrator. Sending "****" back as a value returns 400. A PATCH replaces the whole set.
+       * @example {
+       *       "Authorization": "Bearer app-internal-token"
+       *     }
+       */
+      request_headers?: components["schemas"]["SandboxPreviewHeaders"];
+      ttl?: components["schemas"]["SandboxPreviewTtl"];
+      /**
+       * Format: date-time
+       * @description Time at which the preview is deleted. Must be in the future.
+       * @example 2026-10-19T12:00:00Z
+       */
+      expires_at?: string;
+    };
+    /** @description Preview to create. Only port is required. */
+    CreateSandboxPreviewRequest: components["schemas"]["SandboxPreviewConfiguration"] & {
+      /** @description When true, return the existing preview with this name instead of failing with a conflict. Without name, the name is public-<port> or private-<port>, so the same port and visibility return the same preview. Existing configuration is preserved. Defaults to false when omitted. */
+      create_if_not_exists?: boolean;
+      /**
+       * @description Preview name, unique within the sandbox. When omitted, generated from the sandbox name and port, or public-<port> or private-<port> when create_if_not_exists is true.
+       * @example web
+       */
+      name?: string;
+      /**
+       * @description Sandbox port to expose.
+       * @example 3000
+       */
+      port: number;
+    };
+    /** @description Preview fields to change. name and port cannot be changed. */
+    UpdateSandboxPreviewRequest: components["schemas"]["SandboxPreviewConfiguration"];
+    /** @description Sandbox preview with configuration and server-managed fields at the root. */
+    SandboxPreview: components["schemas"]["SandboxPreviewConfiguration"] & {
+      /**
+       * @description Preview name, used in preview_name path parameters.
+       * @example web
+       */
+      readonly name: string;
+      /**
+       * @description Exposed sandbox port.
+       * @example 3000
+       */
+      readonly port: number;
+      /**
+       * Format: uri
+       * @description HTTPS URL serving the port, including the region label. Use this exact URL. Requests to a private preview need a token.
+       * @example https://a1b2c3d4e5f6g7h8.us-pdx-1.preview.b10.co
+       */
+      readonly url: string;
+      status: components["schemas"]["SandboxPreviewStatus"];
+      /**
+       * @description Region serving the preview, the sandbox's region.
+       * @example us-pdx-1
+       */
+      readonly region?: string;
+      /**
+       * Format: date-time
+       * @example 2026-10-12T12:00:00Z
+       */
+      readonly created_at?: string;
+      /**
+       * Format: date-time
+       * @example 2026-10-12T12:00:00Z
+       */
+      readonly updated_at?: string;
+      /** @example sandbox-automation */
+      readonly created_by?: string;
+      /** @example sandbox-automation */
+      readonly updated_by?: string;
+    };
+    /** @description One page of previews of a sandbox. */
+    ListSandboxPreviewsResponse: {
+      /** @description Resources on this page. */
+      items: components["schemas"]["SandboxPreview"][];
+      pagination: components["schemas"]["SandboxApiPagination"];
+    };
+    CreateSandboxPreviewTokenRequest: {
+      /** @description When true, return an existing unexpired token of this preview that stays valid at least until expires_at instead of creating a new one. Defaults to false when omitted. */
+      create_if_not_exists?: boolean;
+      /**
+       * Format: date-time
+       * @description Time at which the token stops working. Must be in the future.
+       * @example 2026-10-13T12:00:00Z
+       */
+      expires_at: string;
+    };
+    /** @description Access token for a private preview. */
+    SandboxPreviewToken: {
+      /**
+       * @description Token name, used in token_name path parameters.
+       * @example 7f3k2m9q1x8c4v6b0n5z
+       */
+      name: string;
+      /**
+       * @description Value to send as the bl_preview_token query parameter.
+       * @example 7f3k2m9q1x8c4v6b0n5z
+       */
+      token: string;
+      /**
+       * Format: date-time
+       * @example 2026-10-13T12:00:00Z
+       */
+      expires_at: string;
+      /**
+       * @description Whether expires_at has passed.
+       * @example false
+       */
+      expired: boolean;
+    };
+    /** @description One page of tokens of a preview. */
+    ListSandboxPreviewTokensResponse: {
+      /** @description Resources on this page. */
+      items: components["schemas"]["SandboxPreviewToken"][];
+      pagination: components["schemas"]["SandboxApiPagination"];
+    };
     GetVolumesParams: {
       /**
        * Cursor
@@ -14831,6 +14975,60 @@ export type components = {
       /** @description Optional team ID. Must match X-Team-Id when both are supplied. If neither selector is supplied, defaults to the caller's only accessible team. Callers with multiple accessible teams must select a team. Requests without access to any team are forbidden. */
       team_id?: string;
     };
+    ListSandboxPreviewsParams: {
+      /** @description Optional team ID. Must match X-Team-Id when both are supplied. If neither selector is supplied, defaults to the caller's only accessible team. Callers with multiple accessible teams must select a team. Requests without access to any team are forbidden. */
+      team_id?: string;
+      /**
+       * @description Opaque cursor from the previous page; omit for the first page.
+       * @example eyJ2IjoxLCJsYXN0X2tleSI6ImJhc2V0ZW4tYXBpLXJldmlldy0wOTE2Iiwic29ydCI6ImRlc2MifQ
+       */
+      cursor?: string;
+      /**
+       * @description Maximum number of items to return.
+       * @example 20
+       */
+      limit?: number;
+    };
+    CreateSandboxPreviewParams: {
+      /** @description Optional team ID. Must match X-Team-Id when both are supplied. If neither selector is supplied, defaults to the caller's only accessible team. Callers with multiple accessible teams must select a team. Requests without access to any team are forbidden. */
+      team_id?: string;
+    };
+    GetSandboxPreviewParams: {
+      /** @description Optional team ID. Must match X-Team-Id when both are supplied. If neither selector is supplied, defaults to the caller's only accessible team. Callers with multiple accessible teams must select a team. Requests without access to any team are forbidden. */
+      team_id?: string;
+      /** @description Reveal request header values for workspace administrators, for example to change one header and send the full set back in a PATCH. Defaults to false. Callers without the admin role receive masked values even when true. */
+      show_secrets?: boolean;
+    };
+    UpdateSandboxPreviewParams: {
+      /** @description Optional team ID. Must match X-Team-Id when both are supplied. If neither selector is supplied, defaults to the caller's only accessible team. Callers with multiple accessible teams must select a team. Requests without access to any team are forbidden. */
+      team_id?: string;
+    };
+    DeleteSandboxPreviewParams: {
+      /** @description Optional team ID. Must match X-Team-Id when both are supplied. If neither selector is supplied, defaults to the caller's only accessible team. Callers with multiple accessible teams must select a team. Requests without access to any team are forbidden. */
+      team_id?: string;
+    };
+    ListSandboxPreviewTokensParams: {
+      /** @description Optional team ID. Must match X-Team-Id when both are supplied. If neither selector is supplied, defaults to the caller's only accessible team. Callers with multiple accessible teams must select a team. Requests without access to any team are forbidden. */
+      team_id?: string;
+      /**
+       * @description Opaque cursor from the previous page; omit for the first page.
+       * @example eyJ2IjoxLCJsYXN0X2tleSI6ImJhc2V0ZW4tYXBpLXJldmlldy0wOTE2Iiwic29ydCI6ImRlc2MifQ
+       */
+      cursor?: string;
+      /**
+       * @description Maximum number of items to return.
+       * @example 20
+       */
+      limit?: number;
+    };
+    CreateSandboxPreviewTokenParams: {
+      /** @description Optional team ID. Must match X-Team-Id when both are supplied. If neither selector is supplied, defaults to the caller's only accessible team. Callers with multiple accessible teams must select a team. Requests without access to any team are forbidden. */
+      team_id?: string;
+    };
+    DeleteSandboxPreviewTokenParams: {
+      /** @description Optional team ID. Must match X-Team-Id when both are supplied. If neither selector is supplied, defaults to the caller's only accessible team. Callers with multiple accessible teams must select a team. Requests without access to any team are forbidden. */
+      team_id?: string;
+    };
     ListImagesParams: {
       /** @description Optional team ID. Must match X-Team-Id when both are supplied. If neither selector is supplied, defaults to the caller's only accessible team. Callers with multiple accessible teams must select a team. Requests without access to any team are forbidden. */
       team_id?: string;
@@ -15080,6 +15278,10 @@ export type components = {
     TeamIdHeader: string;
     /** @description Immutable sandbox name returned by creation. */
     SandboxName: string;
+    /** @description Preview name returned by creation. */
+    PreviewName: string;
+    /** @description Token name returned by creation. */
+    PreviewTokenName: string;
     /** @description Image repository name. */
     SandboxImageName: string;
     /** @description Image tag name. */
@@ -15633,17 +15835,16 @@ export type ExploreCostValues = components["schemas"]["ExploreCostValues"];
 export type ExploreMetadataApiFormats = components["schemas"]["ExploreMetadataAPIFormats"];
 export type ExploreMetadata = components["schemas"]["ExploreMetadata"];
 export type ExploreMetadataResponse = components["schemas"]["ExploreMetadataResponse"];
+export type RouteClassifierListingRef = components["schemas"]["RouteClassifierListingRef"];
 export type RouteRef = components["schemas"]["RouteRef"];
 export type RouteTargetBasetenModelApi = components["schemas"]["RouteTargetBasetenModelAPI"];
-export type RouteTargetClassifierModelBased =
-  components["schemas"]["RouteTargetClassifierModelBased"];
+export type RouteTargetClassifier = components["schemas"]["RouteTargetClassifier"];
 export type RouteTargetConnection = components["schemas"]["RouteTargetConnection"];
 export type Route = components["schemas"]["Route"];
 export type RoutesResponse = components["schemas"]["RoutesResponse"];
 export type UpsertRouteTargetBasetenModelApi =
   components["schemas"]["UpsertRouteTargetBasetenModelAPI"];
-export type UpsertRouteTargetClassifierModelBased =
-  components["schemas"]["UpsertRouteTargetClassifierModelBased"];
+export type UpsertRouteTargetClassifier = components["schemas"]["UpsertRouteTargetClassifier"];
 export type UpsertRouteTargetConnection = components["schemas"]["UpsertRouteTargetConnection"];
 export type CreateRouteRequest = components["schemas"]["CreateRouteRequest"];
 export type RouteProvider = components["schemas"]["RouteProvider"];
@@ -15770,6 +15971,19 @@ export type SandboxLibraryImage = components["schemas"]["SandboxLibraryImage"];
 export type ListSandboxLibraryImagesResponse =
   components["schemas"]["ListSandboxLibraryImagesResponse"];
 export type CleanupSandboxImagesResponse = components["schemas"]["CleanupSandboxImagesResponse"];
+export type SandboxPreviewStatus = components["schemas"]["SandboxPreviewStatus"];
+export type SandboxPreviewTtl = components["schemas"]["SandboxPreviewTtl"];
+export type SandboxPreviewHeaders = components["schemas"]["SandboxPreviewHeaders"];
+export type SandboxPreviewConfiguration = components["schemas"]["SandboxPreviewConfiguration"];
+export type CreateSandboxPreviewRequest = components["schemas"]["CreateSandboxPreviewRequest"];
+export type UpdateSandboxPreviewRequest = components["schemas"]["UpdateSandboxPreviewRequest"];
+export type SandboxPreview = components["schemas"]["SandboxPreview"];
+export type ListSandboxPreviewsResponse = components["schemas"]["ListSandboxPreviewsResponse"];
+export type CreateSandboxPreviewTokenRequest =
+  components["schemas"]["CreateSandboxPreviewTokenRequest"];
+export type SandboxPreviewToken = components["schemas"]["SandboxPreviewToken"];
+export type ListSandboxPreviewTokensResponse =
+  components["schemas"]["ListSandboxPreviewTokensResponse"];
 export type GetVolumesParams = components["schemas"]["GetVolumesParams"];
 export type GetVolumesNamespacesParams = components["schemas"]["GetVolumesNamespacesParams"];
 export type GetVolumesSyncsParams = components["schemas"]["GetVolumesSyncsParams"];
@@ -15838,6 +16052,17 @@ export type CreateSandboxParams = components["schemas"]["CreateSandboxParams"];
 export type GetSandboxParams = components["schemas"]["GetSandboxParams"];
 export type UpdateSandboxParams = components["schemas"]["UpdateSandboxParams"];
 export type DeleteSandboxParams = components["schemas"]["DeleteSandboxParams"];
+export type ListSandboxPreviewsParams = components["schemas"]["ListSandboxPreviewsParams"];
+export type CreateSandboxPreviewParams = components["schemas"]["CreateSandboxPreviewParams"];
+export type GetSandboxPreviewParams = components["schemas"]["GetSandboxPreviewParams"];
+export type UpdateSandboxPreviewParams = components["schemas"]["UpdateSandboxPreviewParams"];
+export type DeleteSandboxPreviewParams = components["schemas"]["DeleteSandboxPreviewParams"];
+export type ListSandboxPreviewTokensParams =
+  components["schemas"]["ListSandboxPreviewTokensParams"];
+export type CreateSandboxPreviewTokenParams =
+  components["schemas"]["CreateSandboxPreviewTokenParams"];
+export type DeleteSandboxPreviewTokenParams =
+  components["schemas"]["DeleteSandboxPreviewTokenParams"];
 export type ListImagesParams = components["schemas"]["ListImagesParams"];
 export type PushImageParams = components["schemas"]["PushImageParams"];
 export type CleanupImagesParams = components["schemas"]["CleanupImagesParams"];
